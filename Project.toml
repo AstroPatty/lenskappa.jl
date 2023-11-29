@@ -1,4 +1,4 @@
-name = "LensKappa"
+name = "lenskappa.jl"
 uuid = "acab1e92-9a97-49f9-8dbc-8b0c3c1837f0"
 authors = ["Patrick Wells"]
 version = "1.0.0-DEV"
