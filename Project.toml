@@ -1,0 +1,13 @@
+name = "LensKappa"
+uuid = "acab1e92-9a97-49f9-8dbc-8b0c3c1837f0"
+authors = ["Patrick Wells"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
