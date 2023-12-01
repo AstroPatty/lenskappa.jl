@@ -1,11 +1,11 @@
 module lenskappa
 
-include("fit.jl")
+include("model.jl")
 
 export 
     fit,
     GumbelFit,
-    GeVFit
-
+    GeVFit,
+    model
 # Write your package code here.
 end
