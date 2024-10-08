@@ -6,5 +6,8 @@ include("sim.jl")
 export
     kappas,
     SimulatedMap,
-    ObservationalWeights
+    ObservationalWeights,
+    WeightRange,
+    get_kappas_by_range,
+    make_kappa_histogram
 end

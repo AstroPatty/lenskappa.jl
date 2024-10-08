@@ -1,8 +1,8 @@
 using DataFrames
 
-abstract type AbstractWeights end
+abstract type AbstractCounts end
 
-struct SimulationWeights <: AbstractWeights
+struct SimulationWeights <: AbstractCounts
     weight_values::Array{Float64,2}
     names::Array{String,1}
     function SimulationWeights(weight_values::Array{Float64,2}, names::Array{String,1})
@@ -19,19 +19,20 @@ struct SimulationWeights <: AbstractWeights
     end
 end
 
-struct ObservationalWeights <: AbstractWeights
+struct ObservationalWeights <: AbstractCounts
     weight_values::Array{Float64,2}
     names::Array{String,1}
 end
 
 struct WeightRange
+    min::Float64
+    max::Float64
     weight::String
-    range::Tuple{Float64,Float64}
-    WeightRange(range::Tuple{Float64,Float64}, weight::String) = range[1] < range[2] ? new(range, weight) : new((range[2], range[1]), weight)
+    WeightRange(min::Float64, max::Float64, weight::String) = min < max ? new(min, max, weight) : new(max, min, weight)
 end
 
-function WeightRange(min::Float64, max::Float64, weight::String)::WeightRange
-    return WeightRange((min, max), weight)
+function WeightRange(range::Tuple{Float64,2}, weight::String)::WeightRange
+    return WeightRange(range[1], range[2], weight)
 end
 
 function SimulationWeights(df::DataFrame, names::Array{String,1})::SimulationWeights
@@ -46,9 +47,19 @@ function ObservationalWeights(df::DataFrame, names::Array{String,1})::Observatio
         error("Duplicate names found in weights")
     end
 
-    weight_values = convert(Array{Float64,2}, df[:, names])
+    weight_values = Matrix{Float64}(df[:, names])
     # Remove rows with NaNs and Infs
     weight_values = weight_values[.!any(isnan.(weight_values), dims=2), :]
     return ObservationalWeights(weight_values, names)
 end
+
+function ObservationalWeights(path::String, names::Array{String,1})::ObservationalWeights
+    @info "Reading observational weights from $path"
+    if !isfile(path) || !endswith(path, ".csv")
+        @error "File not found or not a CSV"
+    end
+    weight_data = CSV.read(path, DataFrame)
+    ObservationalWeights(weight_data, names)
+end
+
 

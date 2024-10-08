@@ -2,7 +2,7 @@ include("kappa.jl")
 include("weights.jl")
 using DataFrames
 using CSV
-using ProgressBars
+using StatsBase
 
 struct SimulatedMap
     weights::SimulationWeights
@@ -69,15 +69,24 @@ end
 
 
 function get_kappas_by_range(sim::SimulatedMap, ranges::Vector{WeightRange})::Vector{Float32}
-    weight_indices::Vector{String} = []
+    weight_indices = []
     try
-        weight_indices = [findfirst(sim.weights.names .== r) for r in ranges]
+        weight_indices = [findfirst(sim.weights.names .== r.weight) for r in ranges]
     catch
         @error "The weights expected in the ranges are not in this map..."
     end
     mask = trues(length(sim.kappa))
     for i in weight_indices
-        mask = mask .& (sim.weights.values[:, i] .>= ranges[i].min) .& (sim.weights.values[:, i] .<= ranges[i].max)
+        mask = mask .& (sim.weights.weight_values[:, i] .>= ranges[i].min) .& (sim.weights.weight_values[:, i] .<= ranges[i].max)
     end
     return @view sim.kappa[mask]
+end
+
+function get_kappas_by_range(sim::SimulatedMap, range::WeightRange)::Vector{Float32}
+    return get_kappas_by_range(sim, [range])
+end
+
+function make_kappa_histogram(sim::SimulatedMap, ranges::Vector{WeightRange}, bins::Vector{Float64})
+    kappas = get_kappas_by_range(sim, ranges)
+    fit(Histogram, kappas, bins)
 end
