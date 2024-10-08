@@ -1,11 +1,10 @@
 module lenskappa
 
-include("model.jl")
+include("sim.jl")
 
-export 
-    fit,
-    GumbelFit,
-    GeVFit,
-    model
-# Write your package code here.
+
+export
+    kappas,
+    SimulatedMap,
+    ObservationalWeights
 end
