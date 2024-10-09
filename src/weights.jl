@@ -25,10 +25,10 @@ struct ObservationalWeights <: AbstractCounts
 end
 
 struct WeightRange
-    min::Float64
-    max::Float64
+    min::Number
+    max::Number
     weight::String
-    WeightRange(min::Float64, max::Float64, weight::String) = min < max ? new(min, max, weight) : new(max, min, weight)
+    WeightRange(min::Number, max::Number, weight::String) = min < max ? new(min, max, weight) : new(max, min, weight)
 end
 
 

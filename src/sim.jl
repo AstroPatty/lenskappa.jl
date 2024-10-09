@@ -68,7 +68,7 @@ function SimulatedMap(values::DataFrame, weights::Vector{String})
 end
 
 
-function get_kappas_by_range(sim::SimulatedMap, ranges::Vector{WeightRange})::Vector{Float32}
+function get_kappas_by_range(sim::SimulatedMap, ranges::Vararg{WeightRange,N})::Vector{Float32} where {N}
     weight_indices = []
     try
         weight_indices = [findfirst(sim.weights.names .== r.weight) for r in ranges]
@@ -82,11 +82,8 @@ function get_kappas_by_range(sim::SimulatedMap, ranges::Vector{WeightRange})::Ve
     return @view sim.kappa[mask]
 end
 
-function get_kappas_by_range(sim::SimulatedMap, range::WeightRange)::Vector{Float32}
-    return get_kappas_by_range(sim, [range])
-end
 
-function make_kappa_histogram(sim::SimulatedMap, ranges::Vector{WeightRange}, bins::Vector{Float64})
-    kappas = get_kappas_by_range(sim, ranges)
+function make_kappa_histogram(sim::SimulatedMap, bins::Vector{Float64}, ranges::Vararg{WeightRange,N})::Histogram where {N}
+    kappas = get_kappas_by_range(sim, ranges...)
     fit(Histogram, kappas, bins)
 end
