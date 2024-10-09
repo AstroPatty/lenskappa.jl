@@ -31,6 +31,7 @@ struct WeightRange
     WeightRange(min::Float64, max::Float64, weight::String) = min < max ? new(min, max, weight) : new(max, min, weight)
 end
 
+
 function WeightRange(range::Tuple{Float64,2}, weight::String)::WeightRange
     return WeightRange(range[1], range[2], weight)
 end
@@ -41,16 +42,18 @@ function SimulationWeights(df::DataFrame, names::Array{String,1})::SimulationWei
     return SimulationWeights(weight_values, names)
 end
 
-function ObservationalWeights(df::DataFrame, names::Array{String,1})::ObservationalWeights
+function ObservationalWeights(df::DataFrame, column_names::Array{String,1})::ObservationalWeights
     # Check for duplicate names
-    if length(names) != length(unique(names))
+    if length(column_names) != length(unique(column_names))
         error("Duplicate names found in weights")
     end
+    # print column names
+    weight_values = Matrix{Float64}(df[:, column_names])
+    # Make a mask of rows with NaNs or Infs
+    mask = vec(any(isnan.(weight_values), dims=2) .| any(isinf.(weight_values), dims=2))
+    weight_values = weight_values[.!mask, :]
 
-    weight_values = Matrix{Float64}(df[:, names])
-    # Remove rows with NaNs and Infs
-    weight_values = weight_values[.!any(isnan.(weight_values), dims=2), :]
-    return ObservationalWeights(weight_values, names)
+    return ObservationalWeights(weight_values, column_names)
 end
 
 function ObservationalWeights(path::String, names::Array{String,1})::ObservationalWeights
@@ -62,4 +65,40 @@ function ObservationalWeights(path::String, names::Array{String,1})::Observation
     ObservationalWeights(weight_data, names)
 end
 
+
+function get_weights_in_box(Weights::ObservationalWeights, ranges::Vararg{WeightRange,N})::ObservationalWeights where {N}
+    mask = trues(size(Weights.weight_values, 1))
+    for weight_range in ranges
+        column_index = findfirst(Weights.names .== weight_range.weight)
+        mask = mask .& (weight_range.min .<= Weights.weight_values[:, column_index] .<= weight_range.max)
+    end
+    if all(mask)
+        return Weights
+    end
+    values = @view Weights.weight_values[mask, :]
+    return ObservationalWeights(values, Weights.names)
+end
+
+function make_density(weights::ObservationalWeights, bins_per_dim::Int, ranges::Vararg{WeightRange,N}) where {N}
+    trucated_weights = get_weights_in_box(weights, ranges...)
+    bins_edges = map(w -> range(w.min, w.max, length=bins_per_dim), ranges)
+    # create boxes
+    weight_ranges = map(
+        (edges, r) -> map(
+            (min, max) -> WeightRange(min, max, r.weight),
+            edges[1:end-1], edges[2:end]
+        ), bins_edges, ranges
+    )
+    weight_boxes = Iterators.product(weight_ranges...)
+    # count the number of weights in each box
+    counts = map(
+        (box) -> get_weights_in_box(trucated_weights, box...),
+        weight_boxes
+    )
+    # normalize the counts
+    total = sum(map(c -> size(c.weight_values, 1), counts))
+    densities = map(c -> size(c.weight_values, 1) / total, counts)
+    return weight_boxes, densities
+
+end
 
